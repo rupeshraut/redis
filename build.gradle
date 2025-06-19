@@ -1,0 +1,157 @@
+plugins {
+    id 'java'
+    id 'application'
+    id 'idea'
+    id 'eclipse'
+}
+
+group = 'com.example.redis'
+version = '1.0.0'
+description = 'Advanced Redis Use Cases with Java and Lettuce'
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // Redis Client - Lettuce
+    implementation 'io.lettuce:lettuce-core:6.4.0.RELEASE'
+    
+    // JSON Processing
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.17.0'
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.17.0'
+    
+    // Logging
+    implementation 'org.slf4j:slf4j-api:2.0.12'
+    implementation 'ch.qos.logback:logback-classic:1.4.14'
+    
+    // Configuration
+    implementation 'com.typesafe:config:1.4.3'
+    
+    // Metrics and Monitoring
+    implementation 'io.micrometer:micrometer-core:1.12.4'
+    implementation 'io.micrometer:micrometer-registry-prometheus:1.12.4'
+    
+    // Utilities
+    implementation 'org.apache.commons:commons-lang3:3.14.0'
+    implementation 'org.apache.commons:commons-pool2:2.12.0'
+    implementation 'com.google.guava:guava:33.1.0-jre'
+    
+    // Rate Limiting (using custom implementation)
+    // implementation 'io.github.bucket4j:bucket4j-core:8.7.0'
+    // implementation 'io.github.bucket4j:bucket4j-redis:8.7.0'
+    
+    // Circuit Breaker
+    implementation 'io.github.resilience4j:resilience4j-circuitbreaker:2.2.0'
+    implementation 'io.github.resilience4j:resilience4j-retry:2.2.0'
+    
+    // Testing
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
+    testImplementation 'org.mockito:mockito-core:5.11.0'
+    testImplementation 'org.mockito:mockito-junit-jupiter:5.11.0'
+    testImplementation 'org.testcontainers:testcontainers:1.19.7'
+    testImplementation 'org.testcontainers:junit-jupiter:1.19.7'
+    testImplementation 'org.awaitility:awaitility:4.2.1'
+}
+
+application {
+    mainClass = 'com.example.redis.RedisAdvancedDemo'
+}
+
+test {
+    useJUnitPlatform()
+    
+    // Test configuration
+    systemProperty 'junit.jupiter.execution.parallel.enabled', 'true'
+    systemProperty 'junit.jupiter.execution.parallel.mode.default', 'concurrent'
+    
+    testLogging {
+        events "passed", "skipped", "failed"
+        exceptionFormat "full"
+    }
+}
+
+tasks.register('runCacheDemo', JavaExec) {
+    group = 'application'
+    description = 'Run the Redis Cache Demo'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'com.example.redis.cache.CacheDemo'
+}
+
+tasks.register('runPubSubDemo', JavaExec) {
+    group = 'application'
+    description = 'Run the Redis Pub/Sub Demo'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'com.example.redis.pubsub.PubSubDemo'
+}
+
+tasks.register('runStreamsDemo', JavaExec) {
+    group = 'application'
+    description = 'Run the Redis Streams Demo'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'com.example.redis.streams.StreamsDemo'
+}
+
+tasks.register('runDistributedLockDemo', JavaExec) {
+    group = 'application'
+    description = 'Run the Distributed Lock Demo'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'com.example.redis.lock.DistributedLockDemo'
+}
+
+tasks.register('runRateLimitDemo', JavaExec) {
+    group = 'application'
+    description = 'Run the Rate Limiting Demo'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'com.example.redis.ratelimit.RateLimitDemo'
+}
+
+// Gradle wrapper
+wrapper {
+    gradleVersion = '8.7'
+    distributionType = Wrapper.DistributionType.BIN
+}
+
+// IDE configuration
+idea {
+    module {
+        downloadJavadoc = true
+        downloadSources = true
+    }
+}
+
+// Java compilation options
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+    options.compilerArgs += [
+        '-Xlint:unchecked',
+        '-Xlint:deprecation',
+        '-parameters'
+    ]
+}
+
+// Create JAR with dependencies
+tasks.register('fatJar', Jar) {
+    group = 'build'
+    description = 'Create a fat JAR with all dependencies'
+    archiveClassifier = 'all'
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+    with jar
+    
+    manifest {
+        attributes(
+            'Main-Class': application.mainClass.get(),
+            'Implementation-Title': project.name,
+            'Implementation-Version': project.version
+        )
+    }
+    
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
